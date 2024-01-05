@@ -2,7 +2,7 @@ package com.malyskok.productsservice.command;
 
 import java.math.BigDecimal;
 
-import com.malyskok.productsservice.core.event.ProductCreateEvent;
+import com.malyskok.productsservice.core.event.ProductCreatedEvent;
 import org.axonframework.commandhandling.CommandHandler;
 import org.axonframework.eventsourcing.EventSourcingHandler;
 import org.axonframework.modelling.command.AggregateIdentifier;
@@ -36,16 +36,16 @@ public class ProductAggregate {
             throw new IllegalArgumentException("Title cannot be blank");
         }
 
-        ProductCreateEvent productCreateEvent = new ProductCreateEvent();
-        BeanUtils.copyProperties(createProductCommand, productCreateEvent);
-        AggregateLifecycle.apply(productCreateEvent);
+        ProductCreatedEvent productCreatedEvent = new ProductCreatedEvent();
+        BeanUtils.copyProperties(createProductCommand, productCreatedEvent);
+        AggregateLifecycle.apply(productCreatedEvent);
     }
 
     @EventSourcingHandler
-    public void on(ProductCreateEvent productCreateEvent){
-        this.productId = productCreateEvent.getProductId();
-        this.price = productCreateEvent.getPrice();
-        this.quantity = productCreateEvent.getQuantity();
-        this.title = productCreateEvent.getTitle();
+    public void on(ProductCreatedEvent productCreatedEvent){
+        this.productId = productCreatedEvent.getProductId();
+        this.price = productCreatedEvent.getPrice();
+        this.quantity = productCreatedEvent.getQuantity();
+        this.title = productCreatedEvent.getTitle();
     }
 }
