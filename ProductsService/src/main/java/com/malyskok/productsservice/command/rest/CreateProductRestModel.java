@@ -8,6 +8,26 @@
 
 package com.malyskok.productsservice.command.rest;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+
 import java.math.BigDecimal;
 
-public record CreateProductRestModel(String title, BigDecimal price, Integer quantity){}
+@Data
+public class CreateProductRestModel {
+
+    @NotBlank(message = "Product title must not be blank")
+    private String title;
+
+    @NotNull
+    @Min(value = 1, message = "Price cannot be lower than 1")
+    private BigDecimal price;
+
+    @NotNull
+    @Min(value = 1, message = "Quantity cannot be lower than 1")
+    @Max(value = 5, message = "Quantity cannot be larger than 5")
+    private Integer quantity;
+}

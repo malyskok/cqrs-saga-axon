@@ -9,6 +9,7 @@
 package com.malyskok.productsservice.command.rest;
 
 import com.malyskok.productsservice.command.CreateProductCommand;
+import jakarta.validation.Valid;
 import org.axonframework.commandhandling.gateway.CommandGateway;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
@@ -33,12 +34,12 @@ public class ProductsCommandRestController {
     }
 
     @PostMapping
-    public String createProduct(@RequestBody CreateProductRestModel model) {
+    public String createProduct(@Valid @RequestBody CreateProductRestModel model) {
 
         CreateProductCommand createProductCommand = CreateProductCommand.builder()
-                .price(model.price())
-                .quantity(model.quantity())
-                .title(model.title())
+                .price(model.getPrice())
+                .quantity(model.getQuantity())
+                .title(model.getTitle())
                 .productId(UUID.randomUUID().toString())
                 .build();
 
