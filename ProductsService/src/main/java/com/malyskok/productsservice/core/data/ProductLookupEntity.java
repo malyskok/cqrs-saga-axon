@@ -11,21 +11,24 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.math.BigDecimal;
 
-@Table(name = "products")
+@Table(name = "productlookup")
 @Entity
 @Getter
 @Setter
-public class ProductEntity implements Serializable {
+@AllArgsConstructor
+@NoArgsConstructor
+public class ProductLookupEntity implements Serializable {
 
     @Serial
-    private static final long serialVersionUID = -5847204165005755882L;
+    private static final long serialVersionUID = 2275404880343105923L;
 
     @Id
     @Column(unique = true)
@@ -33,8 +36,4 @@ public class ProductEntity implements Serializable {
 
     @Column(unique = true)
     private String title;
-
-    private BigDecimal price;
-
-    private Integer quantity;
 }

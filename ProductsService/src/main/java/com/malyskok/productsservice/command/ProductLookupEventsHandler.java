@@ -5,32 +5,30 @@
  * Proin dapibus sapien vel ante. Aliquam erat volutpat. Pellentesque sagittis ligula eget metus.
  * Vestibulum commodo. Ut rhoncus gravida arcu.
  */
-package com.malyskok.productsservice.query;
+package com.malyskok.productsservice.command;
 
-import com.malyskok.productsservice.core.data.ProductEntity;
-import com.malyskok.productsservice.core.data.ProductsRepository;
+import com.malyskok.productsservice.core.data.ProductLookupEntity;
+import com.malyskok.productsservice.core.data.ProductLookupRepository;
 import com.malyskok.productsservice.core.event.ProductCreatedEvent;
 import org.axonframework.config.ProcessingGroup;
 import org.axonframework.eventhandling.EventHandler;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 @ProcessingGroup("product-group")
-public class ProductEventsHandler {
+public class ProductLookupEventsHandler {
 
-    private final ProductsRepository productsRepository;
+    private final ProductLookupRepository productLookupRepository;
 
     @Autowired
-    public ProductEventsHandler(ProductsRepository productsRepository) {
-        this.productsRepository = productsRepository;
+    public ProductLookupEventsHandler(ProductLookupRepository productLookupRepository) {
+        this.productLookupRepository = productLookupRepository;
     }
 
     @EventHandler
     public void on(ProductCreatedEvent event){
-        ProductEntity productEntity = new ProductEntity();
-        BeanUtils.copyProperties(event, productEntity);
-        productsRepository.save(productEntity);
+        ProductLookupEntity lookupEntity = new ProductLookupEntity(event.getProductId(), event.getTitle());
+        productLookupRepository.save(lookupEntity);
     }
 }

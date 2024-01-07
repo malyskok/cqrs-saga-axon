@@ -8,23 +8,30 @@
 package com.malyskok.productsservice.command.interceptors;
 
 import com.malyskok.productsservice.command.CreateProductCommand;
+import com.malyskok.productsservice.core.data.ProductLookupEntity;
+import com.malyskok.productsservice.core.data.ProductLookupRepository;
 import org.axonframework.commandhandling.CommandMessage;
 import org.axonframework.messaging.MessageDispatchInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Nonnull;
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.function.BiFunction;
-
-import static org.apache.commons.lang.StringUtils.isBlank;
 
 @Component
 public class CreateProductCommandInterceptor implements MessageDispatchInterceptor<CommandMessage<?>> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CreateProductCommandInterceptor.class);
+
+    private final ProductLookupRepository productLookupRepository;
+
+    @Autowired
+    public CreateProductCommandInterceptor(ProductLookupRepository productLookupRepository) {
+        this.productLookupRepository = productLookupRepository;
+    }
 
     @Nonnull
     @Override
@@ -35,14 +42,15 @@ public class CreateProductCommandInterceptor implements MessageDispatchIntercept
 
             if (CreateProductCommand.class.equals(command.getPayloadType())) {
 
-                CreateProductCommand createProductCommand = (CreateProductCommand) command.getPayload();
+                CreateProductCommand createCommand = (CreateProductCommand) command.getPayload();
 
-                if (createProductCommand.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
-                    throw new IllegalArgumentException("Price cannot be less or equal than 0");
-                }
+                ProductLookupEntity lookupEntity = productLookupRepository.findByProductIdOrTitle(
+                        createCommand.getProductId(), createCommand.getTitle());
 
-                if (isBlank(createProductCommand.getTitle())) {
-                    throw new IllegalArgumentException("Title cannot be blank");
+                if (lookupEntity != null) {
+                    throw new IllegalArgumentException(
+                            String.format("Product with %s productid or %s title already exists",
+                                    lookupEntity.getProductId(), lookupEntity.getTitle()));
                 }
             }
             return command;
