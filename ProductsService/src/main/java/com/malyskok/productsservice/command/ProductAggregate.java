@@ -29,20 +29,22 @@ public class ProductAggregate {
         // Validate Create Product Command
 
         if (createProductCommand.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Price cannot be less or equal than 0");
+            throw new IllegalStateException("Price cannot be less or equal than 0");
         }
 
         if (isBlank(createProductCommand.getTitle())) {
-            throw new IllegalArgumentException("Title cannot be blank");
+            throw new IllegalStateException("Title cannot be blank");
         }
 
         ProductCreatedEvent productCreatedEvent = new ProductCreatedEvent();
         BeanUtils.copyProperties(createProductCommand, productCreatedEvent);
         AggregateLifecycle.apply(productCreatedEvent);
+
+//        if(true) throw new Exception("Some exception occurred during @CommandHandler");
     }
 
     @EventSourcingHandler
-    public void on(ProductCreatedEvent productCreatedEvent){
+    public void on(ProductCreatedEvent productCreatedEvent) {
         this.productId = productCreatedEvent.getProductId();
         this.price = productCreatedEvent.getPrice();
         this.quantity = productCreatedEvent.getQuantity();

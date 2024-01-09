@@ -43,12 +43,6 @@ public class ProductsCommandRestController {
                 .productId(UUID.randomUUID().toString())
                 .build();
 
-        String returnValue;
-        try {
-            returnValue = commandGateway.sendAndWait(createProductCommand);
-        } catch (Exception ex) {
-            returnValue = ex.getLocalizedMessage();
-        }
-        return returnValue;
+        return commandGateway.sendAndWait(createProductCommand);
     }
 }
