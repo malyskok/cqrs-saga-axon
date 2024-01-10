@@ -7,9 +7,11 @@
  */
 package com.malyskok.productsservice.query;
 
+import com.malyskok.estore.core.events.ProductReservedEvent;
 import com.malyskok.productsservice.core.data.ProductEntity;
 import com.malyskok.productsservice.core.data.ProductsRepository;
 import com.malyskok.productsservice.core.event.ProductCreatedEvent;
+import lombok.extern.slf4j.Slf4j;
 import org.axonframework.config.ProcessingGroup;
 import org.axonframework.eventhandling.EventHandler;
 import org.axonframework.messaging.interceptors.ExceptionHandler;
@@ -17,6 +19,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 @ProcessingGroup("product-group")
 public class ProductEventsHandler {
@@ -42,10 +45,28 @@ public class ProductEventsHandler {
 
     @EventHandler
     public void on(ProductCreatedEvent event) throws Exception {
+        log.info(String.format("""
+                EventHandler - Handle ProductCreatedEvent
+                productId: %s
+                """, event.getProductId()));
+
         ProductEntity productEntity = new ProductEntity();
         BeanUtils.copyProperties(event, productEntity);
         productsRepository.save(productEntity);
 
 //        if(true) throw new Exception("Some exception occurred during @CommandHandler");
+    }
+
+    @EventHandler
+    public void on(ProductReservedEvent event){
+        log.info(String.format("""
+                EventHandler - Handle ProductReservedEvent
+                orderId: %s
+                productId: %s
+                """, event.getOrderId(), event.getProductId()));
+
+        ProductEntity product = productsRepository.findByProductId(event.getProductId());
+        product.setQuantity(product.getQuantity() - event.getQuantity());
+        productsRepository.save(product);
     }
 }

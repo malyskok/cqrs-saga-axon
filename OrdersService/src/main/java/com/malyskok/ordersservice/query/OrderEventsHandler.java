@@ -10,11 +10,13 @@ package com.malyskok.ordersservice.query;
 import com.malyskok.ordersservice.core.data.OrderEntity;
 import com.malyskok.ordersservice.core.data.OrdersRepository;
 import com.malyskok.ordersservice.core.event.OrderCreateEvent;
+import lombok.extern.slf4j.Slf4j;
 import org.axonframework.eventhandling.EventHandler;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 public class OrderEventsHandler {
 
@@ -27,6 +29,12 @@ public class OrderEventsHandler {
 
     @EventHandler
     public void on(OrderCreateEvent event){
+        log.info(String.format("""
+                EventHandler - Handle ProductReservedEvent
+                orderId: %s
+                productId: %s
+                """, event.getOrderId(), event.getProductId()));
+
         OrderEntity entity = new OrderEntity();
         BeanUtils.copyProperties(event, entity);
         ordersRepository.save(entity);
