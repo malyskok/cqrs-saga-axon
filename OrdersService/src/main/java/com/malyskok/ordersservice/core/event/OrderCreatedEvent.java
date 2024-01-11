@@ -5,12 +5,18 @@
  * Proin dapibus sapien vel ante. Aliquam erat volutpat. Pellentesque sagittis ligula eget metus.
  * Vestibulum commodo. Ut rhoncus gravida arcu.
  */
-package com.malyskok.ordersservice.core.data;
+package com.malyskok.ordersservice.core.event;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import com.malyskok.ordersservice.command.OrderStatus;
+import lombok.Data;
 
-@Repository
-public interface OrdersRepository extends JpaRepository<OrderEntity, String> {
-    OrderEntity findByOrderId(String orderId);
+@Data
+public class OrderCreatedEvent {
+    private String orderId;
+    private String productId;
+    private String userId;
+    private int quantity;
+    private String addressId;
+    private OrderStatus orderStatus;
+
 }

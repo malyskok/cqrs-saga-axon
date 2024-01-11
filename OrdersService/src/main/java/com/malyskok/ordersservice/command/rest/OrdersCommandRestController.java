@@ -7,7 +7,7 @@
  */
 package com.malyskok.ordersservice.command.rest;
 
-import com.malyskok.ordersservice.command.CreateOrderCommand;
+import com.malyskok.ordersservice.command.commands.CreateOrderCommand;
 import com.malyskok.ordersservice.command.OrderStatus;
 import jakarta.validation.Valid;
 import org.axonframework.commandhandling.gateway.CommandGateway;

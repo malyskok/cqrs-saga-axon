@@ -5,18 +5,16 @@
  * Proin dapibus sapien vel ante. Aliquam erat volutpat. Pellentesque sagittis ligula eget metus.
  * Vestibulum commodo. Ut rhoncus gravida arcu.
  */
-package com.malyskok.ordersservice.core.event;
+package com.malyskok.ordersservice.command.commands;
 
-import com.malyskok.ordersservice.command.OrderStatus;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.axonframework.modelling.command.TargetAggregateIdentifier;
 
 @Data
-public class OrderCreateEvent {
-    private String orderId;
-    private String productId;
-    private String userId;
-    private int quantity;
-    private String addressId;
-    private OrderStatus orderStatus;
+@AllArgsConstructor
+public class ApproveOrderCommand {
 
+    @TargetAggregateIdentifier
+    private final String orderId;
 }

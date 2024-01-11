@@ -5,12 +5,16 @@
  * Proin dapibus sapien vel ante. Aliquam erat volutpat. Pellentesque sagittis ligula eget metus.
  * Vestibulum commodo. Ut rhoncus gravida arcu.
  */
-package com.malyskok.ordersservice.core.data;
+package com.malyskok.ordersservice.errorhandling;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 
-@Repository
-public interface OrdersRepository extends JpaRepository<OrderEntity, String> {
-    OrderEntity findByOrderId(String orderId);
+import java.util.Date;
+
+@Data
+@AllArgsConstructor
+public class ErrorMessage {
+    private final Date timestamp;
+    private final String message;
 }

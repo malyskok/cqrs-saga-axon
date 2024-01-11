@@ -5,20 +5,18 @@
  * Proin dapibus sapien vel ante. Aliquam erat volutpat. Pellentesque sagittis ligula eget metus.
  * Vestibulum commodo. Ut rhoncus gravida arcu.
  */
-package com.malyskok.ordersservice.command;
+package com.malyskok.estore.core.commands;
 
+import com.malyskok.estore.core.user.PaymentDetails;
 import lombok.Builder;
 import lombok.Data;
 import org.axonframework.modelling.command.TargetAggregateIdentifier;
 
 @Data
 @Builder
-public class CreateOrderCommand {
+public class ProcessPaymentCommand {
     @TargetAggregateIdentifier
-    public final String orderId;
-    private final String userId;
-    private final String productId;
-    private final int quantity;
-    private final String addressId;
-    private final OrderStatus orderStatus;
+    private String paymentId;
+    private String orderId;
+    private PaymentDetails paymentDetails;
 }

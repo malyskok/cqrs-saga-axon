@@ -9,8 +9,10 @@ package com.malyskok.ordersservice.query;
 
 import com.malyskok.ordersservice.core.data.OrderEntity;
 import com.malyskok.ordersservice.core.data.OrdersRepository;
-import com.malyskok.ordersservice.core.event.OrderCreateEvent;
+import com.malyskok.ordersservice.core.event.OrderApprovedEvent;
+import com.malyskok.ordersservice.core.event.OrderCreatedEvent;
 import lombok.extern.slf4j.Slf4j;
+import org.axonframework.config.ProcessingGroup;
 import org.axonframework.eventhandling.EventHandler;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
+@ProcessingGroup("order-group")
 public class OrderEventsHandler {
 
     private final OrdersRepository ordersRepository;
@@ -28,7 +31,7 @@ public class OrderEventsHandler {
     }
 
     @EventHandler
-    public void on(OrderCreateEvent event){
+    public void on(OrderCreatedEvent event){
         log.info(String.format("""
                 EventHandler - Handle ProductReservedEvent
                 orderId: %s
@@ -38,5 +41,23 @@ public class OrderEventsHandler {
         OrderEntity entity = new OrderEntity();
         BeanUtils.copyProperties(event, entity);
         ordersRepository.save(entity);
+    }
+
+    @EventHandler
+    public void on(OrderApprovedEvent event){
+        log.info(String.format("""
+                EventHandler - Handle OrderApprovedEvent
+                orderId: %s
+                orderStatus: %s
+                """, event.getOrderId(), event.getOrderStatus()));
+
+        OrderEntity orderEntity = ordersRepository.findByOrderId(event.getOrderId());
+
+        if(orderEntity == null){
+            //todo do smth about it
+        }
+
+        orderEntity.setOrderStatus(event.getOrderStatus());
+        ordersRepository.save(orderEntity);
     }
 }

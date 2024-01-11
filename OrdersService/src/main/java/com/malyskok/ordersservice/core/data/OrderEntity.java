@@ -9,6 +9,7 @@ package com.malyskok.ordersservice.core.data;
 
 import com.malyskok.ordersservice.command.OrderStatus;
 import jakarta.persistence.*;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -17,8 +18,7 @@ import java.io.Serializable;
 
 @Entity
 @Table(name = "orders")
-@Getter
-@Setter
+@Data
 public class OrderEntity implements Serializable {
     @Serial
     private static final long serialVersionUID = -2071951694671974518L;

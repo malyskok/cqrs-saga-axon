@@ -7,20 +7,27 @@
  */
 package com.malyskok.ordersservice.saga;
 
+import com.malyskok.estore.core.commands.ProcessPaymentCommand;
 import com.malyskok.estore.core.commands.ReserveProductCommand;
+import com.malyskok.estore.core.events.PaymentProcessedEvent;
 import com.malyskok.estore.core.events.ProductReservedEvent;
 import com.malyskok.estore.core.user.FetchUserPaymentDetailsQuery;
 import com.malyskok.estore.core.user.UserDetails;
-import com.malyskok.ordersservice.core.event.OrderCreateEvent;
+import com.malyskok.ordersservice.command.commands.ApproveOrderCommand;
+import com.malyskok.ordersservice.core.event.OrderApprovedEvent;
+import com.malyskok.ordersservice.core.event.OrderCreatedEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.axonframework.commandhandling.gateway.CommandGateway;
-import org.axonframework.messaging.responsetypes.ResponseType;
 import org.axonframework.messaging.responsetypes.ResponseTypes;
+import org.axonframework.modelling.saga.EndSaga;
 import org.axonframework.modelling.saga.SagaEventHandler;
 import org.axonframework.modelling.saga.StartSaga;
 import org.axonframework.queryhandling.QueryGateway;
 import org.axonframework.spring.stereotype.Saga;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Saga
@@ -34,7 +41,7 @@ public class OrderSaga {
 
     @StartSaga
     @SagaEventHandler(associationProperty = "orderId")
-    public void handle(OrderCreateEvent event) {
+    public void handle(OrderCreatedEvent event) {
         log.info(String.format("""
                 SagaEventHandler - handle OrderCreateEvent
                 orderId: %s
@@ -86,5 +93,49 @@ public class OrderSaga {
                 userId: %s
                 """, event.getOrderId(), event.getProductId(), userDetails.getUserId()));
 
+        ProcessPaymentCommand processPaymentCommand = ProcessPaymentCommand.builder()
+                .paymentId(UUID.randomUUID().toString())
+                .orderId(event.getOrderId())
+                .paymentDetails(userDetails.getPaymentDetails())
+                .build();
+
+        String result = null;
+        try {
+            result = commandGateway.sendAndWait(processPaymentCommand, 10, TimeUnit.SECONDS);
+        } catch (Exception e){
+            log.error(e.getMessage(), e);
+            //start compensating transaction
+        }
+
+        if(result == null){
+            log.info("ProcessPaymentCommand returned null. Starting to compensate transaction");
+            //start compensating transaction
+        }
+
+    }
+
+    @SagaEventHandler(associationProperty = "orderId")
+    public void handle(PaymentProcessedEvent event) {
+        log.info(String.format("""
+                SagaEventHandler - handle PaymentProcessedEvent
+                orderId: %s
+                paymentId: %s
+                """, event.getOrderId(), event.getPaymentId()));
+
+        //approve order
+        ApproveOrderCommand approveOrderCommand = new ApproveOrderCommand(event.getOrderId());
+        commandGateway.send(approveOrderCommand);
+    }
+
+    @EndSaga
+    @SagaEventHandler(associationProperty = "orderId")
+    public void handle(OrderApprovedEvent event){
+        log.info(String.format("""
+                SagaEventHandler - handle OrderApprovedEvent
+                orderId: %s
+                orderStatus: %s
+                Saga is complete!
+                """, event.getOrderId(), event.getOrderStatus()));
+//        SagaLifecycle.end();
     }
 }

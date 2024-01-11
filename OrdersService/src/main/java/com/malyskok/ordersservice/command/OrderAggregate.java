@@ -7,7 +7,10 @@
  */
 package com.malyskok.ordersservice.command;
 
-import com.malyskok.ordersservice.core.event.OrderCreateEvent;
+import com.malyskok.ordersservice.command.commands.ApproveOrderCommand;
+import com.malyskok.ordersservice.command.commands.CreateOrderCommand;
+import com.malyskok.ordersservice.core.event.OrderApprovedEvent;
+import com.malyskok.ordersservice.core.event.OrderCreatedEvent;
 import org.axonframework.commandhandling.CommandHandler;
 import org.axonframework.eventsourcing.EventSourcingHandler;
 import org.axonframework.modelling.command.AggregateIdentifier;
@@ -31,18 +34,29 @@ public class OrderAggregate {
 
     @CommandHandler
     public OrderAggregate(CreateOrderCommand command){
-        OrderCreateEvent event = new OrderCreateEvent();
+        OrderCreatedEvent event = new OrderCreatedEvent();
         BeanUtils.copyProperties(command, event);
         AggregateLifecycle.apply(event);
     }
 
     @EventSourcingHandler
-    public void on(OrderCreateEvent event){
+    public void on(OrderCreatedEvent event){
         this.orderId = event.getOrderId();
         this.productId = event.getProductId();
         this.userId = event.getUserId();
         this.quantity = event.getQuantity();
         this.addressId = event.getAddressId();
+        this.orderStatus = event.getOrderStatus();
+    }
+
+    @CommandHandler
+    public void handle(ApproveOrderCommand command){
+        OrderApprovedEvent approvedEvent = new OrderApprovedEvent(command.getOrderId());
+        AggregateLifecycle.apply(approvedEvent);
+    }
+
+    @EventSourcingHandler
+    public void on(OrderApprovedEvent event){
         this.orderStatus = event.getOrderStatus();
     }
 }
