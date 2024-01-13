@@ -7,15 +7,19 @@
  */
 package com.malyskok.ordersservice.saga;
 
+import com.malyskok.estore.core.commands.CancelProductReservationCommand;
 import com.malyskok.estore.core.commands.ProcessPaymentCommand;
 import com.malyskok.estore.core.commands.ReserveProductCommand;
 import com.malyskok.estore.core.events.PaymentProcessedEvent;
+import com.malyskok.estore.core.events.ProductReservationCancelledEvent;
 import com.malyskok.estore.core.events.ProductReservedEvent;
 import com.malyskok.estore.core.user.FetchUserPaymentDetailsQuery;
 import com.malyskok.estore.core.user.UserDetails;
 import com.malyskok.ordersservice.command.commands.ApproveOrderCommand;
+import com.malyskok.ordersservice.command.commands.RejectOrderCommand;
 import com.malyskok.ordersservice.core.event.OrderApprovedEvent;
 import com.malyskok.ordersservice.core.event.OrderCreatedEvent;
+import com.malyskok.ordersservice.core.event.OrderRejectedEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.axonframework.commandhandling.gateway.CommandGateway;
 import org.axonframework.messaging.responsetypes.ResponseTypes;
@@ -81,7 +85,11 @@ public class OrderSaga {
                     ResponseTypes.instanceOf(UserDetails.class)).join();
         } catch (Exception e){
             log.error(e.getMessage(), e);
-            //start compensating transaction
+            cancelProductReservation(event, e.getMessage());
+            return;
+        }
+        if(userDetails == null){
+            cancelProductReservation(event, "Could not fetch user payment details");
             return;
         }
 
@@ -104,14 +112,40 @@ public class OrderSaga {
             result = commandGateway.sendAndWait(processPaymentCommand, 10, TimeUnit.SECONDS);
         } catch (Exception e){
             log.error(e.getMessage(), e);
-            //start compensating transaction
+            cancelProductReservation(event, e.getMessage());
+            return;
         }
 
         if(result == null){
             log.info("ProcessPaymentCommand returned null. Starting to compensate transaction");
-            //start compensating transaction
+            cancelProductReservation(event, "Could not process user payment with provided details");
         }
 
+    }
+
+    private void cancelProductReservation(ProductReservedEvent event, String reason){
+        CancelProductReservationCommand cancelCommand = CancelProductReservationCommand.builder()
+                .productId(event.getProductId())
+                .quantity(event.getQuantity())
+                .orderId(event.getOrderId())
+                .userId(event.getUserId())
+                .reason(reason)
+                .build();
+        commandGateway.send(cancelCommand);
+    }
+
+    @SagaEventHandler(associationProperty = "orderId")
+    public void handle(ProductReservationCancelledEvent productReservationCancelledEvent){
+        log.info(String.format("""
+                SagaEventHandler - handle ProductReservationCancelledEvent
+                orderId: %s
+                productId: %s
+                reason: %s
+                """, productReservationCancelledEvent.getOrderId(), productReservationCancelledEvent.getProductId(),
+                productReservationCancelledEvent.getReason()));
+        RejectOrderCommand rejectOrderCommand = new RejectOrderCommand(
+                productReservationCancelledEvent.getOrderId(), productReservationCancelledEvent.getReason());
+        commandGateway.send(rejectOrderCommand);
     }
 
     @SagaEventHandler(associationProperty = "orderId")
@@ -137,5 +171,16 @@ public class OrderSaga {
                 Saga is complete!
                 """, event.getOrderId(), event.getOrderStatus()));
 //        SagaLifecycle.end();
+    }
+
+    @EndSaga
+    @SagaEventHandler(associationProperty = "orderId")
+    public void handle(OrderRejectedEvent event){
+        log.info(String.format("""
+                SagaEventHandler - handle OrderRejectedEvent
+                orderId: %s
+                orderStatus: %s
+                Saga is complete!
+                """, event.getOrderId(), event.getOrderStatus()));
     }
 }

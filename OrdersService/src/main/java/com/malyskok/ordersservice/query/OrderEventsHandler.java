@@ -11,6 +11,7 @@ import com.malyskok.ordersservice.core.data.OrderEntity;
 import com.malyskok.ordersservice.core.data.OrdersRepository;
 import com.malyskok.ordersservice.core.event.OrderApprovedEvent;
 import com.malyskok.ordersservice.core.event.OrderCreatedEvent;
+import com.malyskok.ordersservice.core.event.OrderRejectedEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.axonframework.config.ProcessingGroup;
 import org.axonframework.eventhandling.EventHandler;
@@ -59,5 +60,17 @@ public class OrderEventsHandler {
 
         orderEntity.setOrderStatus(event.getOrderStatus());
         ordersRepository.save(orderEntity);
+    }
+
+    @EventHandler
+    public void on(OrderRejectedEvent event){
+        log.info(String.format("""
+                OrderEventsHandler - handle OrderRejectedEvent
+                orderId: %s
+                orderStatus: %s
+                """, event.getOrderId(), event.getOrderStatus()));
+        OrderEntity toReject = ordersRepository.findByOrderId(event.getOrderId());
+        toReject.setOrderStatus(event.getOrderStatus());
+        ordersRepository.save(toReject);
     }
 }

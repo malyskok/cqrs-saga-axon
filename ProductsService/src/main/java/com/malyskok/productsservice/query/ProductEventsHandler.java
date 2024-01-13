@@ -7,6 +7,7 @@
  */
 package com.malyskok.productsservice.query;
 
+import com.malyskok.estore.core.events.ProductReservationCancelledEvent;
 import com.malyskok.estore.core.events.ProductReservedEvent;
 import com.malyskok.productsservice.core.data.ProductEntity;
 import com.malyskok.productsservice.core.data.ProductsRepository;
@@ -67,6 +68,14 @@ public class ProductEventsHandler {
 
         ProductEntity product = productsRepository.findByProductId(event.getProductId());
         product.setQuantity(product.getQuantity() - event.getQuantity());
+        productsRepository.save(product);
+    }
+
+    @EventHandler
+    public void on(ProductReservationCancelledEvent event){
+        ProductEntity product = productsRepository.findByProductId(event.getProductId());
+        int fixedQuantity = product.getQuantity() + event.getQuantity();
+        product.setQuantity(fixedQuantity);
         productsRepository.save(product);
     }
 }

@@ -2,7 +2,9 @@ package com.malyskok.productsservice.command;
 
 import java.math.BigDecimal;
 
+import com.malyskok.estore.core.commands.CancelProductReservationCommand;
 import com.malyskok.estore.core.commands.ReserveProductCommand;
+import com.malyskok.estore.core.events.ProductReservationCancelledEvent;
 import com.malyskok.estore.core.events.ProductReservedEvent;
 import com.malyskok.productsservice.core.event.ProductCreatedEvent;
 import lombok.extern.slf4j.Slf4j;
@@ -49,6 +51,11 @@ public class ProductAggregate {
 
     @CommandHandler
     public void handleReserveProduct(ReserveProductCommand command){
+        log.info("""
+                CommandHandler - Handle ReserveProductCommand
+                productId: %s
+                orderId: %s
+                """, command.getProductId(), command.getOrderId());
         if(quantity < command.getQuantity()){
             throw new IllegalArgumentException(
                     String.format("Insufficient number of item in stock (%d), ordered: %d",
@@ -87,5 +94,32 @@ public class ProductAggregate {
                 """, event.getOrderId(), event.getProductId()));
 
         this.quantity -= event.getQuantity();
+    }
+
+    @CommandHandler
+    public void handle(CancelProductReservationCommand command){
+        log.info(String.format("""
+                CommandHandler - handle CancelProductReservationCommand
+                orderId: %s
+                productId: %s
+                """, command.getOrderId(), command.getProductId()));
+        ProductReservationCancelledEvent event = ProductReservationCancelledEvent.builder()
+                .productId(command.getProductId())
+                .quantity(command.getQuantity())
+                .orderId(command.getOrderId())
+                .userId(command.getUserId())
+                .reason(command.getReason())
+                .build();
+        AggregateLifecycle.apply(event);
+    }
+
+    @EventSourcingHandler
+    public void on(ProductReservationCancelledEvent event){
+        log.info(String.format("""
+                EventSourcingHandler - handle ProductReservationCancelledEvent
+                orderId: %s
+                productId: %s
+                """, event.getOrderId(), event.getProductId()));
+        this.quantity += this.quantity + event.getQuantity();
     }
 }
