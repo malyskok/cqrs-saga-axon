@@ -20,6 +20,8 @@ import com.malyskok.ordersservice.command.commands.RejectOrderCommand;
 import com.malyskok.ordersservice.core.event.OrderApprovedEvent;
 import com.malyskok.ordersservice.core.event.OrderCreatedEvent;
 import com.malyskok.ordersservice.core.event.OrderRejectedEvent;
+import com.malyskok.ordersservice.core.model.OrderSummary;
+import com.malyskok.ordersservice.query.FindOrderQuery;
 import lombok.extern.slf4j.Slf4j;
 import org.axonframework.commandhandling.gateway.CommandGateway;
 import org.axonframework.deadline.DeadlineManager;
@@ -29,6 +31,7 @@ import org.axonframework.modelling.saga.EndSaga;
 import org.axonframework.modelling.saga.SagaEventHandler;
 import org.axonframework.modelling.saga.StartSaga;
 import org.axonframework.queryhandling.QueryGateway;
+import org.axonframework.queryhandling.QueryUpdateEmitter;
 import org.axonframework.spring.stereotype.Saga;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -51,6 +54,9 @@ public class OrderSaga {
     @Autowired
     private transient DeadlineManager deadlineManager;
 
+    @Autowired
+    private transient QueryUpdateEmitter queryUpdateEmitter;
+
     private String scheduleId;
 
     @StartSaga
@@ -71,9 +77,10 @@ public class OrderSaga {
 
         commandGateway.send(reserveProductCommand, (commandMessage, commandResultMessage) -> {
             if (commandResultMessage.isExceptional()) {
-                //start compensating transaction
+                RejectOrderCommand rejectOrderCommand = new RejectOrderCommand(
+                        event.getOrderId(), commandResultMessage.exceptionResult().getMessage());
+                commandGateway.send(rejectOrderCommand);
             }
-
         });
     }
 
@@ -93,12 +100,12 @@ public class OrderSaga {
         try {
             userDetails = queryGateway.query(userPaymentDetailsQuery,
                     ResponseTypes.instanceOf(UserDetails.class)).join();
-        } catch (Exception e){
+        } catch (Exception e) {
             log.error(e.getMessage(), e);
             cancelProductReservation(event, e.getMessage());
             return;
         }
-        if(userDetails == null){
+        if (userDetails == null) {
             cancelProductReservation(event, "Could not fetch user payment details");
             return;
         }
@@ -124,20 +131,20 @@ public class OrderSaga {
         String result = null;
         try {
             result = commandGateway.sendAndWait(processPaymentCommand);
-        } catch (Exception e){
+        } catch (Exception e) {
             log.error(e.getMessage(), e);
             cancelProductReservation(event, e.getMessage());
             return;
         }
 
-        if(result == null){
+        if (result == null) {
             log.info("ProcessPaymentCommand returned null. Starting to compensate transaction");
             cancelProductReservation(event, "Could not process user payment with provided details");
         }
 
     }
 
-    private void cancelProductReservation(ProductReservedEvent event, String reason){
+    private void cancelProductReservation(ProductReservedEvent event, String reason) {
         log.info("cancelProductReservation method called for orderId: ", event.getOrderId());
         cancelPaymentDeadline();
         CancelProductReservationCommand cancelCommand = CancelProductReservationCommand.builder()
@@ -151,13 +158,13 @@ public class OrderSaga {
     }
 
     @SagaEventHandler(associationProperty = "orderId")
-    public void handle(ProductReservationCancelledEvent productReservationCancelledEvent){
+    public void handle(ProductReservationCancelledEvent productReservationCancelledEvent) {
         log.info(String.format("""
-                SagaEventHandler - handle ProductReservationCancelledEvent
-                orderId: %s
-                productId: %s
-                reason: %s
-                """, productReservationCancelledEvent.getOrderId(), productReservationCancelledEvent.getProductId(),
+                        SagaEventHandler - handle ProductReservationCancelledEvent
+                        orderId: %s
+                        productId: %s
+                        reason: %s
+                        """, productReservationCancelledEvent.getOrderId(), productReservationCancelledEvent.getProductId(),
                 productReservationCancelledEvent.getReason()));
         RejectOrderCommand rejectOrderCommand = new RejectOrderCommand(
                 productReservationCancelledEvent.getOrderId(), productReservationCancelledEvent.getReason());
@@ -181,7 +188,7 @@ public class OrderSaga {
     }
 
     private void cancelPaymentDeadline() {
-        if(scheduleId != null){
+        if (scheduleId != null) {
             deadlineManager.cancelSchedule(PAYMENT_PROCESSING_DEADLINE, scheduleId);
             scheduleId = null;
         }
@@ -189,7 +196,7 @@ public class OrderSaga {
 
     @EndSaga
     @SagaEventHandler(associationProperty = "orderId")
-    public void handle(OrderApprovedEvent event){
+    public void handle(OrderApprovedEvent event) {
         log.info(String.format("""
                 SagaEventHandler - handle OrderApprovedEvent
                 orderId: %s
@@ -197,21 +204,28 @@ public class OrderSaga {
                 Saga is complete!
                 """, event.getOrderId(), event.getOrderStatus()));
 //        SagaLifecycle.end();
+
+        queryUpdateEmitter.emit(FindOrderQuery.class, query -> true,
+                new OrderSummary(event.getOrderId(), event.getOrderStatus(), ""));
     }
 
     @EndSaga
     @SagaEventHandler(associationProperty = "orderId")
-    public void handle(OrderRejectedEvent event){
+    public void handle(OrderRejectedEvent event) {
         log.info(String.format("""
                 SagaEventHandler - handle OrderRejectedEvent
                 orderId: %s
                 orderStatus: %s
                 Saga is complete!
                 """, event.getOrderId(), event.getOrderStatus()));
+
+        queryUpdateEmitter.emit(FindOrderQuery.class, query -> true,
+                new OrderSummary(event.getOrderId(), event.getOrderStatus(),
+                        event.getReason()));
     }
 
     @DeadlineHandler(deadlineName = PAYMENT_PROCESSING_DEADLINE)
-    public void handlePaymentDeadline(ProductReservedEvent event){
+    public void handlePaymentDeadline(ProductReservedEvent event) {
         log.info(String.format("""
                 DeadlineHandler - handle PAYMENT_PROCESSING_DEADLINE
                 orderId: %s

@@ -7,11 +7,9 @@
  */
 package com.malyskok.ordersservice.core.data;
 
-import com.malyskok.ordersservice.command.OrderStatus;
+import com.malyskok.ordersservice.core.model.OrderStatus;
 import jakarta.persistence.*;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 
 import java.io.Serial;
 import java.io.Serializable;

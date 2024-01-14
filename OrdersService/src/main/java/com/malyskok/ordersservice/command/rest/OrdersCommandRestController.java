@@ -8,9 +8,14 @@
 package com.malyskok.ordersservice.command.rest;
 
 import com.malyskok.ordersservice.command.commands.CreateOrderCommand;
-import com.malyskok.ordersservice.command.OrderStatus;
+import com.malyskok.ordersservice.core.model.OrderStatus;
+import com.malyskok.ordersservice.core.model.OrderSummary;
+import com.malyskok.ordersservice.query.FindOrderQuery;
 import jakarta.validation.Valid;
 import org.axonframework.commandhandling.gateway.CommandGateway;
+import org.axonframework.messaging.responsetypes.ResponseTypes;
+import org.axonframework.queryhandling.QueryGateway;
+import org.axonframework.queryhandling.SubscriptionQueryResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -27,22 +32,37 @@ public class OrdersCommandRestController {
 
     private final CommandGateway commandGateway;
 
+    private final QueryGateway queryGateway;
+
     @Autowired
-    public OrdersCommandRestController(CommandGateway commandGateway) {
+    public OrdersCommandRestController(CommandGateway commandGateway, QueryGateway queryGateway) {
         this.commandGateway = commandGateway;
+        this.queryGateway = queryGateway;
     }
 
     @PostMapping
-    public String createOrder(@Valid @RequestBody CreateOrderRestModel model){
+    public OrderSummary createOrder(@Valid @RequestBody CreateOrderRestModel model){
+        String orderId = UUID.randomUUID().toString();
         CreateOrderCommand createOrderCommand = CreateOrderCommand.builder()
                 .productId(model.getProductId())
                 .quantity(model.getQuantity())
                 .addressId(model.getAddressId())
                 .orderStatus(OrderStatus.CREATED)
                 .userId(USER_ID)
-                .orderId(UUID.randomUUID().toString())
+                .orderId(orderId)
                 .build();
 
-        return commandGateway.sendAndWait(createOrderCommand);
+        FindOrderQuery findOrderQuery = new FindOrderQuery(orderId);
+        SubscriptionQueryResult<OrderSummary, OrderSummary> subscriptionQueryResult =
+                queryGateway.subscriptionQuery(findOrderQuery,
+                ResponseTypes.instanceOf(OrderSummary.class),
+                ResponseTypes.instanceOf(OrderSummary.class));
+
+        try {
+            commandGateway.sendAndWait(createOrderCommand);
+            return subscriptionQueryResult.updates().blockFirst();
+        } finally {
+            subscriptionQueryResult.close();
+        }
     }
 }

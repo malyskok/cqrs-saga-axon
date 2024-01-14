@@ -5,7 +5,7 @@
  * Proin dapibus sapien vel ante. Aliquam erat volutpat. Pellentesque sagittis ligula eget metus.
  * Vestibulum commodo. Ut rhoncus gravida arcu.
  */
-package com.malyskok.ordersservice.command;
+package com.malyskok.ordersservice.core.model;
 
 public enum OrderStatus {
     CREATED, APPROVED, REJECTED

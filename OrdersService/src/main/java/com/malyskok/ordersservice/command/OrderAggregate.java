@@ -13,6 +13,7 @@ import com.malyskok.ordersservice.command.commands.RejectOrderCommand;
 import com.malyskok.ordersservice.core.event.OrderApprovedEvent;
 import com.malyskok.ordersservice.core.event.OrderCreatedEvent;
 import com.malyskok.ordersservice.core.event.OrderRejectedEvent;
+import com.malyskok.ordersservice.core.model.OrderStatus;
 import lombok.extern.slf4j.Slf4j;
 import org.axonframework.commandhandling.CommandHandler;
 import org.axonframework.eventsourcing.EventSourcingHandler;

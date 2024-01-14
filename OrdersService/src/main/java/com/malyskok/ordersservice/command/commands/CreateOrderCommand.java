@@ -7,7 +7,7 @@
  */
 package com.malyskok.ordersservice.command.commands;
 
-import com.malyskok.ordersservice.command.OrderStatus;
+import com.malyskok.ordersservice.core.model.OrderStatus;
 import lombok.Builder;
 import lombok.Data;
 import org.axonframework.modelling.command.TargetAggregateIdentifier;

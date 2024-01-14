@@ -7,9 +7,8 @@
  */
 package com.malyskok.ordersservice.core.event;
 
-import com.malyskok.ordersservice.command.OrderStatus;
+import com.malyskok.ordersservice.core.model.OrderStatus;
 import lombok.Data;
-import lombok.Value;
 
 //@Value
 @Data
