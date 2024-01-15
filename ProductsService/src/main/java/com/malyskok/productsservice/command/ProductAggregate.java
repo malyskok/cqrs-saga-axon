@@ -18,7 +18,7 @@ import org.springframework.beans.BeanUtils;
 import static org.apache.commons.lang.StringUtils.isBlank;
 
 @Slf4j
-@Aggregate
+@Aggregate(snapshotTriggerDefinition = "productSnapshotTriggerDefinition")
 public class ProductAggregate {
 
     @AggregateIdentifier
