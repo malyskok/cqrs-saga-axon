@@ -12,6 +12,7 @@ import com.malyskok.productsservice.core.data.ProductLookupRepository;
 import com.malyskok.productsservice.core.event.ProductCreatedEvent;
 import org.axonframework.config.ProcessingGroup;
 import org.axonframework.eventhandling.EventHandler;
+import org.axonframework.eventhandling.ResetHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -30,5 +31,10 @@ public class ProductLookupEventsHandler {
     public void on(ProductCreatedEvent event){
         ProductLookupEntity lookupEntity = new ProductLookupEntity(event.getProductId(), event.getTitle());
         productLookupRepository.save(lookupEntity);
+    }
+
+    @ResetHandler
+    public void reset(){
+        productLookupRepository.deleteAll();
     }
 }
